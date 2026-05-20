@@ -81,8 +81,14 @@ def baixar_precos() -> pd.DataFrame:
 @st.cache_data(ttl=3600 * 6, show_spinner=False)
 def baixar_benchmarks() -> pd.DataFrame:
     hoje = datetime.today().strftime("%Y-%m-%d")
-    ibov = yf.download("^BVSP", start=DATA_INICIO, end=hoje,
-                       auto_adjust=True, progress=False)["Close"]
+    raw_ibov = yf.download("^BVSP", start=DATA_INICIO, end=hoje,
+                            auto_adjust=True, progress=False)
+    # yfinance pode retornar MultiIndex dependendo da versão
+    if isinstance(raw_ibov.columns, pd.MultiIndex):
+        ibov = raw_ibov["Close"].iloc[:, 0]
+    else:
+        ibov = raw_ibov["Close"]
+    ibov = ibov.squeeze()
     ibov.name = "IBOV"
 
     cdi_diaria = _baixar_cdi_bcb()
@@ -1020,5 +1026,7 @@ st.markdown("---")
 st.markdown(
     "<div style='text-align:center;font-family:JetBrains Mono;font-size:0.7rem;color:#999;'>"
     "QUANT ALLOCATOR · BUILT WITH STREAMLIT · DATA VIA YFINANCE & BCB SGS · "
+    "OPTIMIZATION VIA PYPORTFOLIOOPT (HRP, López de Prado 2016)</div>",
+    unsafe_allow_html=True)
     "OPTIMIZATION VIA PYPORTFOLIOOPT (HRP, López de Prado 2016)</div>",
     unsafe_allow_html=True)
